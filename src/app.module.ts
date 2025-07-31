@@ -6,11 +6,8 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { join } from 'path';
 
 import { ResInterceptor } from './interceptors/res.interceptor';
-
-// middleware params
 import { ParamsModule } from './middleware/params/params.module';
 
-// feature modules
 import { InitializeModule } from './modules/initialize/initialize.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -31,31 +28,31 @@ import { PromocodesModule } from './modules/promocodes/promocodes.module';
       rootPath: join(__dirname, '..', 'static'),
       serveRoot: '/static',
     }),
+
+    // Подключаемся к MySQL через полный URL (DATABASE_URL) + TLS
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT) || 3306,
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      charset: 'utf8mb4_general_ci',
+      url: process.env.DATABASE_URL,
       entities: [join(__dirname, '/entities/**/*{.entity,.js,.ts}')],
       synchronize: true,
       cache: false,
 
-      // ВАЖНО: публичное подключение к Railway чаще всего требует SSL
-      ssl: { rejectUnauthorized: true },
+      // TLS для публичного Railway
+      ssl: { rejectUnauthorized: false },
 
-      // необязательно, но полезно
+      // устойчивость к кратковременным обрывам
+      retryAttempts: 10,
+      retryDelay: 3000,
+      keepConnectionAlive: true,
+
+      // лимит соединений
       extra: {
         connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 5,
       },
     }),
 
-    // common
     ParamsModule,
 
-    // features
     InitializeModule,
     AdminModule,
     CategoriesModule,
