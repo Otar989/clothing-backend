@@ -44,7 +44,7 @@ import { PromocodesModule } from './modules/promocodes/promocodes.module';
       cache: false,
 
       // ВАЖНО: публичное подключение к Railway чаще всего требует SSL
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true },
 
       // необязательно, но полезно
       extra: {
