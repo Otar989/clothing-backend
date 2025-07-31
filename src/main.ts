@@ -1,13 +1,14 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 👉 все контроллеры будут доступны под `/api/...`
+  // 👇 обязательно! именно он делает /api/...
   app.setGlobalPrefix('api');
 
-  // 👉 разрешаем фронту (и Telegram-Web-App, если нужно) ходить на бекенд
+  // 👇 чтобы фронт и Telegram-Web-App могли стучаться
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') ?? '*',
   });
