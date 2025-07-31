@@ -1,36 +1,31 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ResInterceptor } from './interceptors/res.interceptor';
-import { ParamsMiddleware } from './middleware/params/params.middleware';
-import { StartParamsModule } from './middleware/params/params.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { join } from 'path';
-import { InitializeModule } from './controllers/initialize/initialize.module';
-import { AdminModule } from './controllers/admin/admin.module';
-import { CategoriesModule } from './controllers/categories/categories.module';
-import { ProductsModule } from './controllers/products/products.module';
-import { TasksModule } from './tasks/tasks.module';
-import { ScheduleModule } from '@nestjs/schedule';
-import { BotModule } from './bot/bot.module';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { FeedbackModule } from './controllers/feedback/feedback.module';
-import { OrdersModule } from './controllers/orders/orders.module';
-import { PromocodesModule } from './controllers/promocodes/promocodes.module';
-import { AdminMiddleware } from './middleware/admin/admin.middleware';
+
+import { ResInterceptor } from './interceptors/res.interceptor';
+
+// middleware params
+import { ParamsModule } from './middleware/params/params.module';
+
+// feature modules (мы используем папку modules)
+import { InitializeModule } from './modules/initialize/initialize.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './modules/products/products.module';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { BotModule } from './modules/bot/bot.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { PromocodesModule } from './modules/promocodes/promocodes.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 25,
-      },
-    ]),
-    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
-      envFilePath: `.env`,
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'static'),
@@ -39,19 +34,23 @@ import { AdminMiddleware } from './middleware/admin/admin.middleware';
     TypeOrmModule.forRoot({
       type: 'mysql',
       extra: {
-        connectionLimit: +process.env.DB_CONNECTION_LIMIT,
+        connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 5,
       },
       host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT),
+      port: Number(process.env.DB_PORT) || 3306,
       username: process.env.DB_USER,
-      charset: 'utf8mb4_general_ci',
       password: process.env.DB_PASSWORD,
+      charset: 'utf8mb4_general_ci',
       database: process.env.DB_NAME,
-      entities: [__dirname + '/entities/*.entity.{js,ts}'],
+      entities: [join(__dirname, '/entities/**/*{.entity,.js,.ts}')],
       synchronize: true,
       cache: false,
     }),
-    StartParamsModule,
+
+    // common
+    ParamsModule,
+
+    // features
     InitializeModule,
     AdminModule,
     CategoriesModule,
@@ -68,19 +67,6 @@ import { AdminMiddleware } from './middleware/admin/admin.middleware';
       provide: APP_INTERCEPTOR,
       useClass: ResInterceptor,
     },
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ParamsMiddleware).exclude('static/(.*)?').forRoutes('*');
-
-    consumer
-      .apply(AdminMiddleware)
-      .exclude('static/(.*)?')
-      .forRoutes('admin/*');
-  }
-}
+export class AppModule {}
