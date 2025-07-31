@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ParamsService } from './params.service';
 
-@Module({})
-export class StartParamsModule {}
+@Module({
+  providers: [ParamsService],
+  exports: [ParamsService],
+})
+export class ParamsModule {}
